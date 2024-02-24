@@ -1,0 +1,53 @@
+module sd001(input clk,x,reset,output y);
+wire q0,q1;
+dff d1(.d((~x&~q1&q0)|(x&q1&~q0)),.clk(clk),.reset(reset),.q(q1));
+dff d0(.d((~x&~q0)|(x&q1)|(q1&~q0)),.clk(clk),.reset(reset),.q(q0));
+assign y= q1&q0;
+endmodule
+module dff(input d,clk,reset, output reg q);
+always @(posedge clk or posedge reset) 
+begin
+ if(reset==1'b1)
+  q <= 1'b0; 
+ else 
+  q <= d; 
+end 
+endmodule
+
+testbench
+
+module tb;
+ reg clk;
+ reg x;
+ reg reset;
+ wire y;
+
+ sd001 uut (
+  .clk(clk), 
+  .x(x), 
+  .reset(reset), 
+  .y(y)
+ );
+ initial begin
+ clk = 0;
+ forever #5 clk = ~clk;
+ end 
+ initial begin
+  x = 0;
+  reset = 1;
+  #30;
+      reset = 0;
+  #40;
+  x = 1;
+  #10;
+  x = 0;
+  #10;
+  x = 1; 
+  #20;
+  x = 0; 
+  #20;
+  x = 1; 
+  #20;
+  x = 0;  
+ end
+endmodule
