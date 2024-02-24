@@ -1,0 +1,57 @@
+module piso(input clk,shift,[3:0]din, output dout);
+wire w[5:0];
+// first dff
+dff d0(.d(din[0]),.clk(clk),.reset(),.q(w[0]));
+mux m1(.a1(w[0]),.a2(din[1]),.sl(shift),.y(w[1]));
+
+// 2nd dff
+dff d1(.d(w[1]),.clk(clk),.reset(),.q(w[2]));
+mux m2(.a1(w[2]),.a2(din[2]),.sl(shift),.y(w[3]));
+
+// 3rd dff
+dff d2(.d(w[3]),.clk(clk),.reset(),.q(w[4]));
+mux m3(.a1(w[4]),.a2(din[3]),.sl(shift),.y(w[5]));
+
+// 4th dff
+dff d3(.d(w[5]),.clk(clk),.reset(),.q(dout));
+
+endmodule
+
+module dff(input d,clk,reset, output reg q);
+always @(posedge clk)
+begin
+if(reset)
+q<=1'b0;
+else
+q<=d;
+end 
+endmodule
+
+module mux(input a1,a2,sl, output y);
+wire z1,z2;
+and and1(z1,a1,sl);
+and and2(z2,a2,~sl);
+or o1(y,z1,z2);
+endmodule
+
+testbench
+
+
+module tb();
+reg [3:0]din;
+reg clk,shift;
+wire dout;
+piso uut(clk,shift,din,dout);
+initial begin
+clk=1'b0;
+forever #5 clk=~clk;
+end
+initial begin
+shift=0;din=4'b1100;
+#20 shift=1;
+#20 shift=1;
+#10 shift=0;
+#10 shift=0;//b=4'b0110;
+#100 $stop;
+end
+endmodule
