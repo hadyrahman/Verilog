@@ -1,0 +1,191 @@
+module lift(input clk_in,rst,alarm,input [1:0]r,output reg [2:0]out, output reg clk_out,alarm_beep);
+  parameter g0 = 4'b0000; //ground floor with no action
+  parameter g1 = 4'b0001; //ground floor wuth d1 output
+  parameter g2 = 4'b0010; //ground floor with d2 output
+  parameter f0 = 4'b0011; //furst floor
+  parameter f1 = 4'b0100; //first floor with up1
+  parameter f2 = 4'b0101; //first floor with d1
+  parameter s0 = 4'b0110; //second floor
+  parameter s1 = 4'b0111;// second floor with up1
+  parameter s2 = 4'b1000; // second floor with up2
+  
+  //outputs
+  parameter n = 3'b000; 
+  parameter d1 = 3'b001; 
+  parameter d2 = 3'b010; 
+  parameter up1 = 3'b011;
+  parameter up2 = 3'b100;
+  parameter alm = 3'b101;
+  
+  //inputs
+  parameter r0 = 2'b00; 
+  parameter r1 = 2'b01; 
+  parameter r2 = 2'b10; 
+  
+  //current and next state registers 
+  reg [3:0] state, nxt_state;
+  reg[5:0]alrm_counter=6'd0;
+//clockDivider
+reg[15:0]counter=16'd0;
+parameter DIVISOR = 16'd32768 ;
+always @(posedge clk_in)
+begin
+counter<=counter+16'd1;
+if(counter>=(DIVISOR-1))
+begin
+counter<=16'd0;
+end
+clk_out<=(counter<DIVISOR/2)?1'b1:1'b0;
+end
+  
+always@(posedge clk_out,posedge rst) begin
+    if(rst == 1)
+      state <= g0;
+    else if(alarm)
+      begin
+      if (alrm_counter == 'd10) begin
+        alrm_counter<=1'b0;
+        alarm_beep <= 1'b0; 
+        end
+      else
+       alarm_beep <= 1'b1;
+        alrm_counter <= alrm_counter+'d1; end
+    else
+      state <= nxt_state;
+  end
+  always@(state ,r) begin
+    case(state)
+      g0 : begin 
+        if(r == r0)
+          nxt_state <= g0;
+        else if(r==r1)
+          nxt_state <= f1;
+        else 
+          nxt_state <= s2; 
+      end
+      g1 : begin
+        if(r == r0)
+          nxt_state <= g0;
+        else if(r==r1)
+          nxt_state <= f1;
+        else 
+          nxt_state <= s2; 
+      end
+      g2 : begin
+        if(r == r0)
+          nxt_state <= g0;
+        else if(r==r1)
+          nxt_state <= f1;
+        else 
+          nxt_state <= s2; 
+      end
+      f0 : begin
+        if(r == r1)
+          nxt_state <= f0;
+        else if(r == r0)
+          nxt_state <= g1;
+        else
+          nxt_state <= s1;
+      end
+      f1 : begin
+       if(r == r1)
+          nxt_state <= f0;
+        else if(r == r0)
+          nxt_state <= g1;
+        else
+          nxt_state <= s1;
+      end
+      f2 : begin
+       if(r == r1)
+          nxt_state <= f0;
+        else if(r == r0)
+          nxt_state <= g1;
+        else
+          nxt_state <= s1;
+      end
+      s0 : begin
+       if(r == r2)
+          nxt_state <= s0;
+        else if(r == r0)
+          nxt_state <= g2;
+        else
+          nxt_state <= f2;
+      end 
+      s1 : begin
+       if(r == r2)
+          nxt_state <= s0;
+        else if(r == r0)
+          nxt_state <= g2;
+        else
+          nxt_state <= f2;
+      end 
+      s2 : begin
+       if(r == r2)
+          nxt_state <= s0;
+        else if(r == r0)
+          nxt_state <= g2;
+        else
+          nxt_state <= f2;
+      end
+      default : nxt_state <= g0;
+    endcase
+  end
+  always@(state) begin
+    case(state)
+      g0 : out <= n;
+      g1 : out <= d1;
+      g2 : out <= d2;
+      f0 : out <= n;
+      f1 : out <= up1;
+      f2 : out <= d1;
+      s0 : out <= n;
+      s1 : out <= up1;
+      s2 : out <= up2;
+    endcase
+  end
+endmodule
+
+
+testbench
+
+module tb();
+reg clk_in;
+reg rst;
+reg alarm;
+reg [1:0]r;
+wire [2:0] out;
+wire clk_out;
+wire alarm_beep;
+
+lift uut(clk_in,rst,alarm,r,out,clk_out,alarm_beep);
+
+initial begin
+ clk_in = 0;
+ forever #15050 clk_in=~clk_in;
+ end 
+initial begin
+  // Initialize Inputs
+  r = 2'b00; alarm=1'b0;
+  rst = 1;
+  #90300
+  rst = 0;
+  @(negedge clk_out);
+  r = 2'b00;
+  @(negedge clk_out);
+  r = 2'b01;
+  @(negedge clk_out);
+  r = 2'b10;
+  @(negedge clk_out);
+  r = 2'b00;
+  @(negedge clk_out);
+  r = 2'b10;
+  @(negedge clk_out);
+  alarm = 1'b1;
+  @(negedge clk_out);
+  alarm=1'b0;
+  @(negedge clk_out);
+  r=2'b01;
+  $finish;
+end
+      
+endmodule
