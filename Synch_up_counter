@@ -1,0 +1,31 @@
+module up2(input clk,rstn,output [1:0]q);
+tff t1(.d(1'b1),.clk(clk),.rstn(rstn),.q(q[0]));
+tff t2(.d(q[0]),.clk(clk),.rstn(rstn),.q(q[1]));
+endmodule
+module tff(d, clk, rstn, q);
+ input d, clk, rstn; 
+ output q;
+ reg q;
+initial begin
+q=1'b1;
+end
+ always @ ( posedge clk)
+ if (~rstn) begin
+     q <= 1'b0;
+ end else if (d) begin
+     q <= !q;
+ end
+ endmodule
+
+testbench
+
+module tb();
+reg clk,rstn;
+wire [1:0] q;
+up2 uut(clk,rstn,q);
+always #20 clk=~clk;
+initial begin
+clk=0;rstn=0;
+#10 rstn=1;
+end
+endmodule
